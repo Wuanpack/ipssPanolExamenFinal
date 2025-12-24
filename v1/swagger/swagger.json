@@ -1,0 +1,416 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para gestión de herramientas, dashboard y movimientos.",
+        "version": "1.0.0",
+        "title": "API Panol",
+        "contact": {
+            "email": "apiteam@example.com"
+        }
+    },
+    "host": "localhost",
+    "basePath": "/API_PANOL/endpoints",
+    "schemes": [
+        "http"
+    ],
+    "tags": [
+        {
+            "name": "herramientas",
+            "description": "Gestión de herramientas"
+        },
+        {
+            "name": "dashboard",
+            "description": "Dashboard y estadísticas"
+        },
+        {
+            "name": "movimientos",
+            "description": "Gestión de movimientos"
+        }
+    ],
+    "paths": {
+        "/herramientas/herramientas.php": {
+            "get": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Obtiene el inventario completo de herramientas",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Inventario obtenido correctamente",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Herramienta"
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/herramientas/anadirHerramienta.php": {
+            "post": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Agrega una nueva herramienta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Herramienta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Herramienta creada correctamente"
+                    },
+                    "400": {
+                        "description": "Faltan campos obligatorios"
+                    },
+                    "409": {
+                        "description": "Herramienta con mismo número de parte ya existe"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/herramientas/modificar.php": {
+            "put": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Modifica una herramienta existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta a modificar",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Herramienta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Actualización exitosa"
+                    },
+                    "404": {
+                        "description": "Herramienta no encontrada"
+                    },
+                    "409": {
+                        "description": "Conflicto de datos o sin cambios"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/herramientas/activar.php": {
+            "patch": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Activa una herramienta previamente desactivada",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta a activar",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Herramienta activada"
+                    },
+                    "404": {
+                        "description": "Herramienta no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/herramientas/desactivar.php": {
+            "delete": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Desactiva (baja lógica) una herramienta",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta a desactivar",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Herramienta desactivada"
+                    },
+                    "400": {
+                        "description": "No se puede desactivar por préstamos activos"
+                    },
+                    "404": {
+                        "description": "Herramienta no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/dashboard.php": {
+            "get": {
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Obtiene cards y historial de movimientos",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard obtenido correctamente"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/movimientos/aceptar.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Acepta un movimiento",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id_movimiento": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id_movimiento"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Movimiento aceptado correctamente"
+                    },
+                    "404": {
+                        "description": "Movimiento no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/movimientos/rechazar.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Rechaza un movimiento",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id_movimiento": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id_movimiento"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Movimiento rechazado correctamente"
+                    },
+                    "404": {
+                        "description": "Movimiento no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/movimientos/devolver.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Devuelve un movimiento",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id_movimiento": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id_movimiento"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Movimiento devuelto correctamente"
+                    },
+                    "404": {
+                        "description": "Movimiento no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        }
+    },
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "name": "api_key",
+            "in": "header"
+        }
+    },
+    "definitions": {
+        "Herramienta": {
+            "type": "object",
+            "required": [
+                "n_parte",
+                "nombre",
+                "figura",
+                "indice",
+                "pagina",
+                "cantidad",
+                "cantidad_disponible"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "n_parte": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "figura": {
+                    "type": "string"
+                },
+                "indice": {
+                    "type": "string"
+                },
+                "pagina": {
+                    "type": "string"
+                },
+                "cantidad": {
+                    "type": "integer"
+                },
+                "cantidad_disponible": {
+                    "type": "integer"
+                },
+                "activo": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

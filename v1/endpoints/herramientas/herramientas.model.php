@@ -26,30 +26,112 @@ class HerramientasModel
         return $herr ?: null;
     }
 
-    public function getInventario(): array
+    public function getInventario(int $page = 1, int $limit = 50): array
     {
         [$con, $conn] = $this->getConnection();
 
         try {
-            $sql = "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
-                    FROM herramientas";
+            $page = max(1, $page);
+            $limit = max(1, min($limit, 100)); // límite máximo 100
+            $offset = ($page - 1) * $limit;
 
-            $stmt = $conn->prepare($sql);
+            // Contar total de herramientas
+            $stmtTotal = $conn->prepare("SELECT COUNT(*) AS total FROM herramientas");
+            $stmtTotal->execute();
+            $total = (int)$stmtTotal->get_result()->fetch_assoc()['total'];
+
+            // Obtener herramientas con LIMIT y OFFSET
+            $stmt = $conn->prepare(
+                "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
+                FROM herramientas
+                ORDER BY id ASC
+                LIMIT ? OFFSET ?"
+            );
+            $stmt->bind_param("ii", $limit, $offset);
             $stmt->execute();
-
             $result = $stmt->get_result();
-            $inventario = [];
 
+            $herramientas = [];
             while ($row = $result->fetch_assoc()) {
-                $inventario[] = $row;
+                $herramientas[] = $row;
             }
 
-            return $inventario;
+            return [
+                'herramientas' => $herramientas,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                    'total_pages' => (int)ceil($total / $limit)
+                ]
+            ];
+
         } finally {
             $con->closeConnection();
         }
     }
 
+    public function crearHerramienta(array $data): int
+    {
+        [$con, $conn] = $this->getConnection();
+
+        try {
+            $conn->begin_transaction();
+
+            // Campos obligatorios
+            $camposObligatorios = ['n_parte', 'nombre', 'figura', 'indice', 'pagina', 'cantidad', 'cantidad_disponible'];
+            foreach ($camposObligatorios as $campo) {
+                if (!isset($data[$campo])) {
+                    throw new Exception("Falta el campo obligatorio: $campo");
+                }
+            }
+
+            if ($data['cantidad_disponible'] > $data['cantidad']) {
+                throw new Exception("La cantidad disponible no puede ser mayor a la cantidad total");
+            }
+
+            // Verificar que n_parte no exista
+            $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND activo = 1");
+            $stmt->bind_param("s", $data['n_parte']);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            if ($row) {
+                throw new Exception("El número de parte ya existe en otra herramienta");
+            }
+
+            // Insertar
+            $stmt = $conn->prepare(
+                "INSERT INTO herramientas (n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
+            );
+            $stmt->bind_param(
+                "ssssiii",
+                $data['n_parte'],
+                $data['nombre'],
+                $data['figura'],
+                $data['indice'],
+                $data['pagina'],
+                $data['cantidad'],
+                $data['cantidad_disponible']
+            );
+
+            if (!$stmt->execute()) {
+                throw new Exception("Error al crear herramienta");
+            }
+
+            $insertId = $stmt->insert_id;
+            $conn->commit();
+
+            return $insertId;
+
+        } catch (Throwable $e) {
+            $conn->rollback();
+            throw $e;
+        } finally {
+            $con->closeConnection();
+        }
+    }
+    
     public function updateHerramienta(int $id, array $data): void
     {
         [$con, $conn] = $this->getConnection();
