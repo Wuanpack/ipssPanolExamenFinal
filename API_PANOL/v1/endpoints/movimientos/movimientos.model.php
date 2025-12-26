@@ -96,7 +96,7 @@ class MovimientosModel
                 throw new NotFoundException("Solicitud no encontrada");
             }
 
-            if ((int)$mov['tipo_movimiento_id'] !== 1) {
+            if ((int) $mov['tipo_movimiento_id'] !== 1) {
                 throw new ConflictException("La solicitud no está en estado 'Solicitado'");
             }
 
@@ -161,7 +161,7 @@ class MovimientosModel
                 throw new NotFoundException("Solicitud no encontrada");
             }
 
-            if ((int)$mov['tipo_movimiento_id'] !== 1) {
+            if ((int) $mov['tipo_movimiento_id'] !== 1) {
                 throw new ConflictException("Solo se pueden rechazar solicitudes en estado 'Solicitado'");
             }
 
@@ -220,7 +220,7 @@ class MovimientosModel
                 throw new NotFoundException("Préstamo no encontrado");
             }
 
-            if ((int)$mov['tipo_movimiento_id'] !== 2) {
+            if ((int) $mov['tipo_movimiento_id'] !== 2) {
                 throw new ConflictException("Solo se pueden devolver préstamos activos");
             }
 

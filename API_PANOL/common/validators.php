@@ -5,20 +5,25 @@ class Validator
     /* =========================
        QUERY PARAMS
        ========================= */
-    public static function getIdFromQuery(string $paramName = 'id'): int
+    public static function getIdFromQuery(string $key = 'id'): int
     {
-        if (!isset($_GET[$paramName])) {
-            throw new ValidationException("Parámetro '$paramName' no enviado");
-        }
-
-        if (!self::isPositiveInt($_GET[$paramName])) {
+        if (!isset($_GET[$key])) {
             throw new ValidationException(
-                "El parámetro '$paramName' debe ser un entero mayor a 0"
+                "Parámetro '$key' es obligatorio"
             );
         }
 
-        return (int) $_GET[$paramName];
+        $value = $_GET[$key];
+
+        if (!self::isPositiveInt($value)) {
+            throw new ValidationException(
+                "Parámetro '$key' debe ser un entero positivo"
+            );
+        }
+
+        return (int) $value;
     }
+
 
     /* =========================
        AUTH
