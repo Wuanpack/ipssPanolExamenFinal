@@ -23,10 +23,15 @@ El proyecto está dividido en dos partes principales:
 
 ```
 /PROYECTO_PANOL
-├─ /frontend # Interfaz de usuario y archivos JS/CSS
-│ └─ README.md # Detalles de instalación, uso y funcionalidades del frontend
-├─ /API_PANOL # API RESTful para el inventario
-│ └─ README.md # Detalles de instalación, endpoints y uso del backend
+├─ /frontend                    # Interfaz de usuario y archivos JS/CSS
+│ └─ README.md                  # Detalles de instalación, uso y funcionalidades del frontend
+│
+├─ /API_PANOL                   # API RESTful para el inventario
+│ └─ README.md                  # Detalles de instalación, endpoints y uso del backend
+│
+├─ Capturas_Funcionamiento      # Capuras del funcionamiento de la API en PostMan y del Frontend en OperaGX
+│    ├─ API                     # Capuras de la API en Postman
+│    └─ FrontEnd                # Capuras del FrontEnd en OperaGX
 └─ README.md # Este archivo
 ```
 
