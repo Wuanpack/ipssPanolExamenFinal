@@ -146,3 +146,47 @@ INSERT INTO tipo_movimiento (id, nombre) VALUES
 (2, 'Prestado'),
 (3, 'Rechazado'),
 (4, 'Devolución');
+
+INSERT INTO movimiento (
+    tipo_movimiento_id,
+    herramienta_id,
+    usuario_id,
+    lugar_id,
+    fecha_solicitud,
+    fecha_prestamo,
+    fecha_devolucion,
+    fecha_resolucion,
+    motivo_rechazo,
+    cantidad,
+    activo
+) VALUES
+
+-- Movimiento 1: Solicitud normal
+(1, 1, 1, 1, NOW(), NULL, NULL, NULL, NULL, 1, TRUE),
+
+-- Movimiento 2: Prestado y aún no devuelto
+(2, 2, 2, 2, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 2 DAY, NULL, NULL, NULL, 1, TRUE),
+
+-- Movimiento 3: Prestado y devuelto
+(2, 3, 3, 3, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 7 DAY, NULL, 1, TRUE),
+
+-- Movimiento 4: Solicitud rechazada
+(3, 4, 4, 4, NOW() - INTERVAL 5 DAY, NULL, NULL, NOW() - INTERVAL 4 DAY, 'Cantidad insuficiente', 1, TRUE),
+
+-- Movimiento 5: Devolución procesada
+(4, 5, 5, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY, NULL, 1, TRUE),
+
+-- Movimiento 6: Solicitud pendiente
+(1, 6, 6, 2, NOW(), NULL, NULL, NULL, NULL, 2, TRUE),
+
+-- Movimiento 7: Prestado
+(2, 7, 7, 3, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, 1, TRUE),
+
+-- Movimiento 8: Solicitud rechazada
+(3, 8, 8, 4, NOW() - INTERVAL 4 DAY, NULL, NULL, NOW() - INTERVAL 3 DAY, 'Usuario no autorizado', 1, TRUE),
+
+-- Movimiento 9: Devolución procesada
+(4, 9, 9, 5, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 4 DAY, NULL, 2, TRUE),
+
+-- Movimiento 10: Prestado
+(2, 10, 10, 1, NOW() - INTERVAL 1 DAY, NOW(), NULL, NULL, NULL, 1, TRUE);

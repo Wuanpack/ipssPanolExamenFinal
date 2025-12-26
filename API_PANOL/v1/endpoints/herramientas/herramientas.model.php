@@ -172,6 +172,10 @@ class HerramientasModel
         [$con, $conn] = $this->getConnection();
 
         try {
+            if ($id <= 0) {
+                throw new ValidationException("ID inválido");
+            }
+
             $conn->begin_transaction();
 
             $actual = $this->getHerramientaById($id);
@@ -194,12 +198,14 @@ class HerramientasModel
                 // Validaciones
                 if (in_array($campo, ['cantidad', 'cantidad_disponible', 'figura'], true)) {
                     $valor = Validator::requireCantidad($valor, $campo);
+
                     if ($campo === 'cantidad_disponible') {
-                        $cantidad = $data['cantidad'] ?? $actual['cantidad'];
-                        if ($valor > $cantidad) {
+                        $cantidadTotal = $data['cantidad'] ?? $actual['cantidad'];
+                        if ($valor > $cantidadTotal) {
                             throw new BadRequestException("La cantidad disponible no puede ser mayor a la cantidad total");
                         }
                     }
+
                     if ($valor != $actual[$campo]) {
                         $set[] = "$campo = ?";
                         $params[] = $valor;
@@ -207,6 +213,7 @@ class HerramientasModel
                     }
                 } else {
                     $valor = Validator::requireString($valor, $campo, 1, 255);
+
                     if ($campo === 'n_parte' && $valor !== $actual['n_parte']) {
                         // Validar unicidad
                         $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND id != ? AND activo = 1");
@@ -216,6 +223,7 @@ class HerramientasModel
                             throw new ConflictException("El número de parte ya existe en otra herramienta");
                         }
                     }
+
                     if ($valor !== $actual[$campo]) {
                         $set[] = "$campo = ?";
                         $params[] = $valor;
@@ -225,7 +233,7 @@ class HerramientasModel
             }
 
             if (empty($set)) {
-                // No hay cambios, devolvemos info pero con status 200
+                // No hay cambios
                 return ['message' => 'No se realizaron cambios', 'no_changes' => true];
             }
 
@@ -234,8 +242,11 @@ class HerramientasModel
             $types .= 'i';
 
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param($types, ...$params);
+            if (!$stmt) {
+                throw new BadRequestException("Error al preparar la actualización");
+            }
 
+            $stmt->bind_param($types, ...$params);
             if (!$stmt->execute()) {
                 throw new BadRequestException("Error al actualizar herramienta");
             }
@@ -243,9 +254,13 @@ class HerramientasModel
             $conn->commit();
 
             return ['message' => 'Herramienta actualizada correctamente', 'no_changes' => false];
-        } catch (Throwable $e) {
+
+        } catch (ValidationException | ConflictException | NotFoundException | BadRequestException $e) {
             $conn->rollback();
             throw $e;
+        } catch (Throwable $e) {
+            $conn->rollback();
+            throw new ConflictException("No se pudo actualizar la herramienta: " . $e->getMessage());
         } finally {
             $con->closeConnection();
         }
@@ -261,51 +276,73 @@ class HerramientasModel
         [$con, $conn] = $this->getConnection();
 
         try {
+            // Validar ID antes de abrir transacción
+            if ($id <= 0) {
+                throw new ValidationException("ID inválido");
+            }
+
             $conn->begin_transaction();
 
-            $stmt = $conn->prepare(
-                "SELECT activo FROM herramientas WHERE id = ? FOR UPDATE"
-            );
+            // Bloquear herramienta y obtener su estado
+            $stmt = $conn->prepare("SELECT activo FROM herramientas WHERE id = ? FOR UPDATE");
             $stmt->bind_param("i", $id);
-            $stmt->execute();
-            $herr = $stmt->get_result()->fetch_assoc();
+            if (!$stmt->execute()) {
+                throw new BadRequestException("Error al consultar la herramienta");
+            }
 
+            $herr = $stmt->get_result()->fetch_assoc();
             if (!$herr) {
                 throw new NotFoundException("Herramienta no existe");
             }
-            if ((int) $herr['activo'] === $activo) {
-                throw new BadRequestException("La herramienta ya se encuentra en ese estado");
+
+            $activoActual = (int) $herr['activo'];
+            if ($activoActual === $activo) {
+                // Retornar conflicto según estado
+                if ($activo === 0) {
+                    throw new ConflictException("La herramienta ya está desactivada");
+                } else {
+                    throw new ConflictException("La herramienta ya está activa");
+                }
             }
 
+            // Solo validar préstamos activos si se quiere desactivar
             if ($activo === 0) {
                 $stmt = $conn->prepare(
                     "SELECT COUNT(*) AS total
-                     FROM movimiento
-                     WHERE herramienta_id = ?
-                       AND tipo_movimiento_id = 2
-                       AND activo = 1"
+                 FROM movimiento
+                 WHERE herramienta_id = ?
+                   AND tipo_movimiento_id = 2
+                   AND activo = 1"
                 );
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 $row = $stmt->get_result()->fetch_assoc();
+                $totalPrestamos = (int) $row['total'];
 
-                if ((int) $row['total'] > 0) {
-                    throw new BadRequestException("No se puede desactivar la herramienta con préstamos activos");
+                if ($totalPrestamos > 0) {
+                    throw new ConflictException("No se puede desactivar la herramienta porque tiene préstamos activos");
                 }
             }
 
-            $stmt = $conn->prepare(
-                "UPDATE herramientas SET activo = ? WHERE id = ?"
-            );
+            // Actualizar estado
+            $stmt = $conn->prepare("UPDATE herramientas SET activo = ? WHERE id = ?");
             $stmt->bind_param("ii", $activo, $id);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                throw new BadRequestException("Error al actualizar la herramienta");
+            }
 
             $conn->commit();
-        } catch (Throwable $e) {
+
+        } catch (ValidationException | ConflictException | NotFoundException | BadRequestException $e) {
             $conn->rollback();
             throw $e;
+        } catch (Throwable $e) {
+            $conn->rollback();
+            // Atrapar cualquier otro error de MySQL y convertirlo en ConflictException si aplica
+            throw new ConflictException("No se pudo cambiar el estado de la herramienta: " . $e->getMessage());
         } finally {
             $con->closeConnection();
         }
     }
+
 }

@@ -77,46 +77,58 @@ function eliminarToast(toast) {
 // ============================
 // MANEJO DE RESPUESTAS DE API
 // ============================
-function manejarRespuestaAPI(json, { exitoMsg = '', conflictMsg = '', inactiveConflictMsg = '' } = {}) {
+function manejarRespuestaAPI(json, { exitoMsg = '' } = {}) {
     if (!json) return false;
 
-    if (json.status === 200 || json.status === 201) {
-        // Caso de modificación sin cambios
-        if (json.data?.no_changes) {
-            mostrarMensaje('No se han realizado cambios', 'info');
+    // Normalizar mensajes largos de error
+    const normalizarMensaje = (msg) => {
+        if (!msg) return '';
+        // Ejemplo: recortar mensajes que contienen "No se pudo cambiar el estado" y similares
+        if (msg.includes('No se pudo cambiar el estado de la herramienta')) {
+            return 'No se puede desactivar la herramienta porque tiene préstamos activos';
+        }
+        // Otros recortes o reemplazos posibles
+        return msg;
+    };
+
+    switch (json.status) {
+        case 200:
+        case 201:
+            if (json.data?.no_changes) {
+                mostrarMensaje('No se han realizado cambios', 'info');
+                return false;
+            }
+            mostrarMensaje(exitoMsg || normalizarMensaje(json.data?.message) || 'Operación exitosa', 'success');
+            return true;
+
+        case 400:
+        case 422:
+            mostrarMensaje(normalizarMensaje(json.message) || 'Error de validación', 'danger');
             return false;
-        }
-        mostrarMensaje(exitoMsg || json.data?.message || 'Operación exitosa', 'success');
-        return true;
-    }
 
-    if (json.status === 409) {
-        if (json.message?.includes('desactivada')) {
-            mostrarMensaje(inactiveConflictMsg || json.message, 'warning');
-        } else {
-            mostrarMensaje(conflictMsg || json.message, 'warning');
-        }
-        return false;
-    }
+        case 409:
+            mostrarMensaje(normalizarMensaje(json.message) || 'Conflicto al actualizar la herramienta', 'warning');
+            return false;
 
-    if (json.status === 400 || json.status === 422) {
-        mostrarMensaje(json.message || 'Error de validación', 'danger');
-        return false;
-    }
+        case 500:
+            mostrarMensaje('Error interno del servidor', 'danger');
+            return false;
 
-    if (json.status === 500) {
-        mostrarMensaje('Error interno del servidor', 'danger');
-        return false;
+        default:
+            mostrarMensaje('Error desconocido', 'danger');
+            return false;
     }
-
-    mostrarMensaje('Error desconocido', 'danger');
-    return false;
 }
+
 
 // ============================
 // INICIALIZACIÓN
 // ============================
 function initInventario() {
+    console.log('DOM ready:', document.readyState);
+    console.log('Modal crear:', modalCrear);
+console.log('Botón crear:', document.getElementById('btn-crear-herramienta'));
+
     tablaBody = document.getElementById('tabla-inventario-body');
     paginatorContainer = document.getElementById('inventario-paginator');
     modalModificar = new bootstrap.Modal(document.getElementById('modalModificar'));
@@ -185,11 +197,7 @@ async function guardarModificacion() {
 
         const json = await res.json();
 
-        if (manejarRespuestaAPI(json, { 
-            exitoMsg: 'Herramienta modificada con éxito', 
-            conflictMsg: 'El número de parte ya existe en otra herramienta', 
-            inactiveConflictMsg: 'El número de parte ya existe en otra herramienta desactivada' 
-        })) {
+        if (manejarRespuestaAPI(json, { exitoMsg: 'Herramienta modificada con éxito' })) {
             modalModificar.hide();
             cargarInventario(currentPage, limitPerPage);
         }
@@ -230,11 +238,7 @@ async function guardarCreacion() {
 
         const json = await res.json();
 
-        if (manejarRespuestaAPI(json, { 
-            exitoMsg: 'Herramienta creada con éxito', 
-            conflictMsg: 'El número de parte ya existe en otra herramienta', 
-            inactiveConflictMsg: 'El número de parte ya existe en otra herramienta desactivada' 
-        })) {
+        if (manejarRespuestaAPI(json, { exitoMsg: 'Herramienta creada con éxito' })) {
             ['crear-nombre','crear-n-parte','crear-figura','crear-indice','crear-pagina','crear-cantidad','crear-cantidad-disponible']
                 .forEach(id => document.getElementById(id).value = '');
             modalCrear.hide();
@@ -365,9 +369,7 @@ async function toggleActivo(herr) {
         const json = await res.json();
 
         if (manejarRespuestaAPI(json, { 
-            exitoMsg: herr.activo ? 'Herramienta desactivada con éxito' : 'Herramienta activada con éxito', 
-            conflictMsg: 'No se puede activar/desactivar la herramienta por conflicto', 
-            inactiveConflictMsg: 'No se puede activar/desactivar la herramienta por conflicto' 
+            exitoMsg: herr.activo ? 'Herramienta desactivada con éxito' : 'Herramienta activada con éxito'
         })) {
             cargarInventario(currentPage, limitPerPage);
         }
