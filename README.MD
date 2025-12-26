@@ -1,91 +1,94 @@
-EVALUACIÓN FINAL - Desarrollo BackEnd
-Docente: Sebastián Cabezas Ríos
-Estudiante: Alonso Garcia Espinoza
+## Evaluación FINAL Desarrollo BackEnd
+## Docente: Sebastián Cabezas Ríos
+## Estudiante: Alonso Garcia Espinoza
 
-API Pañol de Herramientas J85-GE-21 B/C
+# API Pañol de Herramientas J85-GE-21 B/C
 
-Descripción:
-API para la gestión de un pañol de herramientas para motores J85-GE-21 B/C.
-Permite controlar inventario de herramientas, registrar movimientos (préstamos y devoluciones) 
-y obtener estadísticas generales.
+API para la gestión de un pañol de herramientas para motores **J85-GE-21 B/C**. Permite controlar inventario de herramientas, registrar movimientos (préstamos y devoluciones) y obtener estadísticas generales.
 
-Autor: Alonso García Espinoza
-Versión: LOCAL
+**Autor:** Alonso García Espinoza  
+**Versión:** LOCAL  
 
---------------------------------------------------------------
-Tabla de Contenidos
---------------------------------------------------------------
-1. Requisitos
-2. Estructura del proyecto
-3. Instalación
-4. Autenticación
-5. Endpoints principales
-6. Contacto
---------------------------------------------------------------
+---
 
-1. Requisitos
---------------------------------------------------------------
+## Tabla de Contenidos
+- [Estructura](#estructura-del-proyecto)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Autenticación](#autenticación)
+- [Endpoints principales](#endpoints-principales)
+- [Ejemplos de uso](#ejemplos-de-uso)
+- [Notas](#notas)
+- [Contacto](#contacto)
+
+---
+
+## Requisitos
 - PHP >= 7.4
 - Servidor web (Apache, Nginx, etc.)
 - Base de datos MySQL / MariaDB
 - Extensiones PHP: PDO, JSON
 
-2. Estructura del proyecto
---------------------------------------------------------------
+---
+
+## Estructura del proyecto
+
 /API_PANOL
 │
 ├─ /common
-│   ├─ database.php        -> Conexión a base de datos
-│   ├─ validators.php      -> Funciones de validación
-│   └─ response.php        -> Funciones para enviar JSON
+│   ├─ database.php                      # Conexión a base de datos
+│   ├─ validators.php                    # Funciones de validación
+│   └─ response.php                      # Funciones para enviar JSON
 │
 ├─ /v1
-│   ├─ /swagger
-│   │   ├─ swagger.json               -> Archivo JSON para visualización de Swagger
-│   │   ├─ swagger-initializer.json   -> Configuración inicial de Swagger
-│   │   └─ otros archivos Swagger
+│   ├─/swagger
+│   │   └─ swagger.json                  # Archivo json para visualizacion de Swagger
+│   │   └─ swagger-initializer.json      # Modificar desde donde se ve Swagger
+│   │   └─ {...}                         # Resto de archivos Swagger
 │   │
 │   └─ /endpoints
 │       ├─ /dashboard
-│       │   ├─ dashboard.model.php    -> Queries a la base de datos
-│       │   └─ dashboard.php          -> GET cards e historial de movimientos
-│       │
+│       │   ├─ dashboard.model.php       # Realizar querys a la base de datos
+│       │   └─ dashboard.php             # GET de las cards e historial de movimientos
+|       |
 │       ├─ /herramientas
-│       │   ├─ herramientas.model.php -> Queries a la base de datos
-│       │   ├─ herramientas.php       -> GET inventario
-│       │   ├─ anadirHerramienta.php  -> POST crear herramientas
-│       │   ├─ modificar.php          -> PUT modificar herramientas
-│       │   ├─ activar.php            -> PATCH activar herramientas
-│       │   └─ desactivar.php         -> DELETE desactivar herramientas (lógico)
+│       │   ├─ herramientas.model.php    # Realizar querys a la base de datos
+│       │   ├─ herramientas.php          # GET inventario 
+│       │   ├─ anadirHerramienta.php     # POST crear herramientas
+│       │   ├─ modificar.php             # PUT modificar herramientas
+│       │   ├─ activar.php               # PATCH activar herramientas
+│       │   └─ desactivar.php            # DELETE desactivar herramientas (lógico)
 │       │
 │       └─ /movimientos
-│           ├─ movimientos.model.php  -> Queries a la base de datos
-│           ├─ movimientos.php        -> POST solicitar préstamo
-│           ├─ aceptar.php            -> POST aceptar solicitud
-│           ├─ rechazar.php           -> POST rechazar solicitud
-│           └─ devolver.php           -> POST devolver herramienta
+│           ├─ movimientos.model.php     # Realizar querys a la base de datos
+│           ├─ movimientos.php           # POST realizar una solicitud de prestamo
+│           ├─ aceptar.php               # POST aceptar una solicitud de prestamo
+│           ├─ rechazar.php              # POST rechazar una solicitud de prestamo
+│           └─ devolver.php              # POST devolver una herramienta prestada
 │
 └─ config.php
 
-3. Instalación
---------------------------------------------------------------
+
+## Instalación
 1. Clonar el repositorio:
+   ```bash
    git clone https://github.com/Wuanpack/ipssPanolAPI
+
+
 2. Configurar base de datos en database.php
 3. Importar el esquema SQL del pañol
 4. Configurar tu servidor web apuntando al directorio /API_PANOL/v1/endpoints
 
-4. Autenticación
---------------------------------------------------------------
+## Autenticación
+
 Todas las peticiones requieren un header 'Authorization' con un token Bearer válido:
+Authorization: Bearer ipss.2025.T3
 
-   Authorization: Bearer ipss.2025.T3
+## Endpoints principales
 
-5. Endpoints principales
---------------------------------------------------------------
-- Todos los endpoints y detalles completos se encuentran en swagger.json
-- Para ver la UI de Swagger, apuntar a: /API_PANOL/v1/swagger/#/
+El detalle de los endpoints se encuentra en swagger.json, para visualizar la ui, apuntar a /API_PANOL/v1/swagger/#/
 
-6. Contacto
---------------------------------------------------------------
-Correo: alonso.garcia@mayor.cl
+## Contacto
+
+*   Correo: alonso.garciae@mayor.cl
+
