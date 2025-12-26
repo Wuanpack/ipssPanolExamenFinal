@@ -58,6 +58,12 @@
                             "$ref": "#/definitions/ApiError"
                         }
                     },
+                    "404": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
                     "405": {
                         "description": "Método no permitido",
                         "schema": {
