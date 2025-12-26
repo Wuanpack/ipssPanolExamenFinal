@@ -1,0 +1,977 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para gestión de un Pañol de Herramientas para motores J85-GE-21 B/C; gestión y control de inventario de herramientas, movimientos y dashboard estadístico. Autor: `Alonso García Espinoza`. IMPORTANTE: Usar 'Bearer ipss.2025.T3' como token de autorización en el header de las peticiones.",
+        "version": "LOCAL",
+        "title": "API Pañol de Herramientas J85-GE-21 B/C",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "email": "alonso.garciae@mayor.cl"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "host": "localhost",
+    "basePath": "/PROYECTO_PANOL/API_PANOL/v1/endpoints",
+    "tags": [
+        {
+            "name": "dashboard",
+            "description": "Dashboard y estadísticas"
+        },
+        {
+            "name": "herramientas",
+            "description": "Gestión de herramientas"
+        },
+        {
+            "name": "movimientos",
+            "description": "Gestión de movimientos de herramientas"
+        }
+    ],
+    "schemes": [
+        "http"
+    ],
+    "paths": {
+        "/dashboard/dashboard.php": {
+            "get": {
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": " Obtiene estadisticas generales del pañol + movimientos recientes",
+                "description": "Obtiene data para cards (total de herramientas, préstamos activos, solicitudes pendientes) y los ultimos diez movimientos en un array",
+                "operationId": "getInfoDashboard",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard obtenido correctamente",
+                        "schema": {
+                            "$ref": "#/definitions/GetDashboardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "404": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/herramientas/herramientas.php": {
+            "get": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": " Obtiene un listado de herramientas",
+                "description": "Obtiene un listado de herramientas paginado. Parámetros opcionales: page (número de página), limit (cantidad de ítems por página) de la siguiente forma: herramientas.php?page={page}&limit={limit}",
+                "operationId": "getHerramienta",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Cantidad de ítems por página",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Inventario de herramientas",
+                        "schema": {
+                            "$ref": "#/definitions/GetHerramientasResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/herramientas/anadirHerramienta.php": {
+            "post": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Agrega una nueva herramienta al inventario",
+                "description": "Método para agregar una nueva herramienta al inventario del pañol en la base de datos",
+                "operationId": "creaHerramienta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Herramienta que se va a agregar al inventario",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostHerramientaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Herramienta creada exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/herramientas/modificar.php": {
+            "put": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Modifica una herramienta existente.",
+                "description": "El ID se pasa por la URL y es obligatorio, de la siguiente forma: modificar.php?id={id}. En el cuerpo de la solicitud se envían los parámetros que se desean modificar en formato JSON. No es necesario enviar todos los parámetros, solo aquellos que se desean cambiar. Un JSON vacio {} es valido y retorna codigo 200 igualmente",
+                "operationId": "modificaHerramienta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta que se va a modificar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Herramienta que va a ser modificada, solo se necesita un parámetro en JSON para poder realizar el cambio, además de tener el id en la url",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PutHerramientaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Herramienta actualizada correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "no_changes": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/herramientas/activar.php": {
+            "patch": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Activa una herramienta que estaba desactivada",
+                "description": "Utiliza el id de la herramienta en la URL para activarla, es obligatorio: activar.php?id={id} (no la agrega de nuevo a la base de datos)",
+                "operationId": "activaHerramienta",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta a activar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Herramienta activada correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "null",
+                                    "enum": [
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/herramientas/desactivar.php": {
+            "delete": {
+                "tags": [
+                    "herramientas"
+                ],
+                "summary": "Desactiva una herramienta que se encuentra activa",
+                "description": "Utiliza el id de la herramienta en la URL para desactivarla, es obligatorio: desactivar.php?id={id} (no la elimina de la base de datos)",
+                "operationId": "desactivaHerramienta",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID de la herramienta a desactivar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Herramienta desactivada correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "null",
+                                    "enum": [
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/movimientos/movimientos.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Envia una solicitud para un movimiento de herramienta",
+                "description": "Método para enviar una solicitud de préstamo de una herramienta del inventario del pañol en la base de datos, todos los campos son obligatorios. El rut tiene que ser valido (se hace una validacion con el digito verificador, asi que no puede ser un rut inventado. Ej de rut valido: 12345678-5) y tiene que tener el formato 11111111-1, la herramienta debe existir en el inventario y se pide usando el numero de parte de esta (ej: 21c6011g01), este campo no es case sensitive. Se puede solicitar cualquier cantidad, ya que finalmente en el endpoint POST /aceptar.php se hace la validacion del stock disponible, por lo que si la cantidad solicitada es mayor a la disponible, la solicitud se rechaza en /rechazar.php. El lugar_id corresponde al id del lugar donde se usará la herramienta, estos lugares están predefinidos en la base de datos (ej: 1 = Linea F5, 2 = E-301, 3 = E-425, etc).",
+                "operationId": "creaSolicitud",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Herramienta que se va a solicitar",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostSolicitudMovimientoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Solicitud registrada exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "n_movimiento": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/movimientos/aceptar.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Aceptar una solicitud",
+                "description": "Método para aceptar una solicitud de préstamo de herramientas. Se requiere query en url, por lo que el final de esta debe ser de la siguiente manera: aceptar.php?n_movimiento={n_movimiento}",
+                "operationId": "aceptaSolicitud",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "n_movimiento",
+                        "in": "query",
+                        "description": "ID del n_movimiento de la solicitud a aceptar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Solicitud aceptada correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "null",
+                                    "enum": [
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "404": {
+                        "description": "Solicitud no encontrada",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "409": {
+                        "description": "La solicitud no está en estado 'Solicitado'",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/movimientos/rechazar.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Rechazar una solicitud",
+                "description": "Método para rechazar una solicitud de préstamo de herramientas. Se requiere query en url, por lo que el final de esta debe ser de la siguiente manera: rechazar.php?n_movimiento={n_movimiento}",
+                "operationId": "rechazaSolicitud",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "n_movimiento",
+                        "in": "query",
+                        "description": "ID del n_movimiento de la solicitud a rechazar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Solicitud rechazada correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "null",
+                                    "enum": [
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "404": {
+                        "description": "Solicitud no encontrada",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "409": {
+                        "description": "Solo se pueden rechazar solicitudes en estado 'Solicitado'",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        },
+        "/movimientos/devolver.php": {
+            "post": {
+                "tags": [
+                    "movimientos"
+                ],
+                "summary": "Devuelve un préstamo activo",
+                "description": "Método para devolver una herramienta que estaba en estado 'prestado'. Se requiere query en url, por lo que el final de esta debe ser de la siguiente manera: devolver.php?n_movimiento={n_movimiento}",
+                "operationId": "devuelveHerramienta",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "n_movimiento",
+                        "in": "query",
+                        "description": "ID del n_movimiento de la solicitud a rechazar",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Préstamo devuelto correctamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "null",
+                                    "enum": [
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validacion",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "401": {
+                        "description": "Token no enviado o inválido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "404": {
+                        "description": "Préstamo no encontrado",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "405": {
+                        "description": "Método no permitido",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    },
+                    "409": {
+                        "description": "Solo se pueden devolver préstamos activos",
+                        "schema": {
+                            "$ref": "#/definitions/ApiError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Ingrese el token con el prefijo 'Bearer '"
+        }
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
+    "definitions": {
+        "GetDashboardResponse": {
+            "type": "object",
+            "required": [
+                "status",
+                "message",
+                "data"
+            ],
+            "properties": {
+                "status": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "cards": {
+                            "type": "object",
+                            "properties": {
+                                "total_herramientas": {
+                                    "type": "string"
+                                },
+                                "prestamos_activos": {
+                                    "type": "string"
+                                },
+                                "solicitudes_pendientes": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "tabla": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "n_movimiento": {
+                                        "type": "integer"
+                                    },
+                                    "n_parte": {
+                                        "type": "string"
+                                    },
+                                    "herramienta": {
+                                        "type": "string"
+                                    },
+                                    "usuario": {
+                                        "type": "string"
+                                    },
+                                    "lugar": {
+                                        "type": "string"
+                                    },
+                                    "tipo_movimiento": {
+                                        "type": "string"
+                                    },
+                                    "fecha_prestamo": {
+                                        "type": "string",
+                                        "x-nullable": true
+                                    },
+                                    "fecha_devolucion": {
+                                        "type": "string",
+                                        "x-nullable": true
+                                    },
+                                    "cantidad": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "required": [
+                                    "n_movimiento",
+                                    "n_parte",
+                                    "herramienta",
+                                    "usuario",
+                                    "lugar",
+                                    "tipo_movimiento",
+                                    "cantidad"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "GetHerramientasResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "herramientas": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "n_parte": {
+                                        "type": "string"
+                                    },
+                                    "nombre": {
+                                        "type": "string"
+                                    },
+                                    "figura": {
+                                        "type": "integer"
+                                    },
+                                    "indice": {
+                                        "type": "string"
+                                    },
+                                    "pagina": {
+                                        "type": "string"
+                                    },
+                                    "cantidad": {
+                                        "type": "integer"
+                                    },
+                                    "cantidad_disponible": {
+                                        "type": "integer"
+                                    },
+                                    "activo": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        },
+                        "pagination": {
+                            "type": "object",
+                            "properties": {
+                                "page": {
+                                    "type": "integer"
+                                },
+                                "limit": {
+                                    "type": "integer"
+                                },
+                                "total": {
+                                    "type": "integer"
+                                },
+                                "total_pages": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PostHerramientaRequest": {
+            "type": "object",
+            "properties": {
+                "n_parte": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "figura": {
+                    "type": "integer"
+                },
+                "indice": {
+                    "type": "string"
+                },
+                "pagina": {
+                    "type": "string"
+                },
+                "cantidad": {
+                    "type": "integer"
+                },
+                "cantidad_disponible": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "n_parte",
+                "nombre",
+                "figura",
+                "indice",
+                "pagina",
+                "cantidad",
+                "cantidad_disponible"
+            ]
+        },
+        "PutHerramientaRequest": {
+            "type": "object",
+            "properties": {
+                "n_parte": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "figura": {
+                    "type": "integer"
+                },
+                "indice": {
+                    "type": "string"
+                },
+                "pagina": {
+                    "type": "string"
+                },
+                "cantidad": {
+                    "type": "integer"
+                },
+                "cantidad_disponible": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PostSolicitudMovimientoRequest": {
+            "type": "object",
+            "properties": {
+                "rut": {
+                    "type": "string"
+                },
+                "lugar_id": {
+                    "type": "integer"
+                },
+                "n_parte": {
+                    "type": "string"
+                },
+                "cantidad": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "rut",
+                "lugar_id",
+                "n_parte",
+                "cantidad"
+            ]
+        },
+        "ApiError": {
+            "type": "object",
+            "required": [
+                "status",
+                "message",
+                "data"
+            ],
+            "properties": {
+                "status": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": null,
+                    "enum": [
+                        null
+                    ]
+                }
+            }
+        }
+    },
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
+    }
+}
