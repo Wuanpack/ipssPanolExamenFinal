@@ -34,8 +34,7 @@ API para la gestión de un pañol de herramientas para motores **J85-GE-21 B/C**
 
 ## Estructura del proyecto
 
-Estructura del proyecto: API Pañol de Herramientas J85-GE-21 B/C
-
+```
 /API_PANOL
 |
 |-- /common
@@ -72,6 +71,8 @@ Estructura del proyecto: API Pañol de Herramientas J85-GE-21 B/C
 |                `-- devolver.php            # POST devolver herramienta
 |
 `-- config.php
+```
+
 
 
 
