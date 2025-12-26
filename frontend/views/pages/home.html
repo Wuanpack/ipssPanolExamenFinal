@@ -1,0 +1,43 @@
+<h1>Dashboard- Motores J85</h1>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 mt-4 mb-4">
+            <h5>Total Herramientas Activas</h5>
+            <p id="card-total-herramientas">0</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 mt-4 mb-4">
+            <h5>Préstamos Activos</h5>
+            <p id="card-prestamos-activos">0</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 mt-4 mb-4">
+            <h5>Solicitudes Pendientes</h5>
+            <p id="card-solicitudes-pendientes">0</p>
+        </div>
+    </div>
+</div>
+
+<h2>Registro de los últimos 15 movimientos</h2>
+<div class="table-responsive mt-4">
+    <table class="table table-striped" id="tabla-prestamos">
+        <thead>
+            <tr>
+                <th>N° Movimiento</th>
+                <th>N° Parte</th>
+                <th>Herramienta</th>
+                <th>Usuario</th>
+                <th>Lugar</th>
+                <th>Tipo Movimiento</th>
+                <th>Fecha Préstamo</th>
+                <th>Fecha Devolución</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-prestamos-body">
+            <!-- Filas generadas por JS -->
+        </tbody>
+    </table>
+</div>

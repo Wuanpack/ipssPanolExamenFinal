@@ -1,0 +1,60 @@
+:root {
+    --color-submit-bg: rgba(78, 4, 4, 0.603);
+    --color-submit-hover-bg: rgba(78, 4, 4, 0.82);
+    --color-submit-active-bg: rgba(78, 4, 4, 1);
+    --color-submit-border: rgb(78, 4, 4);
+    --color-submit-hover-border: rgba(136, 6, 6, 0.9);
+    --color-submit-color: rgba(229, 229, 229, 1);
+
+    --header-height: 15vh;
+    --content-height: 70vh;
+    --border-radius: 20px;
+    --transition-speed: 0.8s;
+}
+
+body {
+    background-color: black;
+    top: 0;
+    left: 0;
+    height: 100%;
+}
+
+.row,
+.col {
+    padding: 0;
+}
+
+/* FILA PRINCIPAL */
+
+.fila-principal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.espacios-verticales {
+    height: 15vh;
+}
+
+.fila-central {
+    height: 70vh;
+}
+
+/* BACKGROUND */
+.barras-horizontales {
+    height: 20vh;
+    max-height: 200px;
+}
+
+.espacio-central {
+    height: 60vh;
+}
+
+.img-background {
+    height: 20vh;
+    width: 100%;
+    object-fit: cover;
+    justify-content: center;
+}

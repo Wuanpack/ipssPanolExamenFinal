@@ -1,0 +1,31 @@
+:root {
+    /* COLOR FUENTE */
+    --color-bg: #161616;
+    --color-font: #E5E5E5;
+    --color-borders: #2A2A2A;
+
+    /* INDEX CONTAINER */
+    --color-container-bg: rgba(0, 0, 0, 0.5);
+
+    /* CARD GLASS */
+    --color-card-bg: rgba(0, 0, 0, 0.1);
+    --color-card-shadow: rgba(0, 0, 0, 0.1);
+
+    /* FORM INPUTS */
+    --color-form-bg: rgba(0, 0, 0, 0.2);
+    --color-form-label: rgba(255, 255, 255, 0.8);
+    --color-form-input-bg: rgba(0, 0, 0, 0.4);
+    --color-form-input-border: rgba(165, 165, 165, 0.74);
+
+    /* SUBMIT BUTTON */
+    --color-submit-bg: rgba(78, 4, 4, 0.95);
+    --color-submit-hover-bg: rgba(78, 4, 4, 0.82);
+    --color-submit-hover-border: rgba(136, 6, 6, 0.9);
+    --color-submit-active-bg: rgba(78, 4, 4, 1);
+    --color-submit-active-border: rgba(78, 4, 4, 1);
+    --color-submit-color: rgba(170, 0, 0, 1);
+
+    /* CUSTOM ALERT */
+    --color-alert-bg: rgba(168, 10, 10, 0.411);
+    --color-alert-border: rgba(136, 6, 6, 0.7);
+}

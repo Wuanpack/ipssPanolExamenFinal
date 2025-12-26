@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bandada de Motores</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/051d2dfb2d.js" crossorigin="anonymous"></script>
+    <!-- CSS Dashboard -->
+    <link rel="stylesheet" href="../css/dashboard.css?v=1.1.1">
+</head>
+
+<body>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- SIDEBAR (solo visible en md+) -->
+            <div class="col-xl-2 col-md-3 d-none d-md-block" id="sidebar-container"></div>
+
+            <!-- NAVBAR + MAIN -->
+            <div class="col-xl-10 col-md-9 col-12 d-flex flex-column min-vh-100">
+
+                <!-- Navbar -->
+                <div id="navbar-container"></div>
+
+                <!-- Main content -->
+                <main class="flex-fill p-3" id="main-content">
+                    <!-- Página inicial: home.html se cargará mediante JS -->
+                </main>
+
+            </div>
+
+            <!-- OFFCANVAS (mobile) -->
+            <div id="offcanvas-container"></div>
+
+        </div>
+    </div>
+
+    <!-- JS Dashboard -->
+    <script src="../js/dashboard.js"></script>
+    <script src="../js/home.js"></script>
+    <script src="../js/inventario.js"></script>
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
