@@ -3,56 +3,39 @@
 require_once __DIR__ . '/../../../config.php';
 
 require_once BASE_PATH . '/common/database.php';
+require_once BASE_PATH . '/common/exceptions.php';
 require_once BASE_PATH . '/common/validators.php';
 require_once BASE_PATH . '/common/response.php';
 
 require_once __DIR__ . '/movimientos.model.php';
 
-/* =========================
-   CONFIG
-   ========================= */
+/*
+|----------------------------------------------------------------------
+| Movimientos – POST
+|----------------------------------------------------------------------
+| Devolver préstamo
+|----------------------------------------------------------------------
+*/
 
-define('ALLOWED_METHODS', ['POST']);
+handleRequest(['POST'], function () {
 
-header("Access-Control-Allow-Origin: " . CORS_ORIGIN);
-header("Access-Control-Allow-Methods: " . implode(', ', ALLOWED_METHODS));
-header("Content-Type: " . DEFAULT_CONTENT_TYPE);
+    // =========================
+    // QUERY PARAM
+    // =========================
+    $nMovimiento = Validator::getIdFromQuery('n_movimiento');
 
-/* =========================
-   POST - Devolver préstamo
-   ========================= */
-function handleReturnRequest(): void
-{
-    $nMovimiento = getIdFromQuery('n_movimiento');
+    // =========================
+    // DEVOLVER PRÉSTAMO
+    // =========================
+    $model = new MovimientosModel();
+    $model->devolverPrestamo($nMovimiento);
 
-    if (!validatePositiveInt($nMovimiento)) {
-        sendJsonResponse(400, null, "n_movimiento inválido");
-        return;
-    }
-
-    try {
-        $model = new MovimientosModel();
-        $model->devolverPrestamo((int)$nMovimiento);
-
-        sendJsonResponse(
-            200,
-            null,
-            "Préstamo devuelto correctamente"
-        );
-
-    } catch (Throwable $e) {
-        sendJsonResponse(400, null, $e->getMessage());
-    }
-}
-
-/* =========================
-   ROUTING
-   ========================= */
-
-validateMethod(ALLOWED_METHODS);
-
-if (!validateAuth()) {
-    exit;
-}
-
-handleReturnRequest();
+    // =========================
+    // RESPUESTA
+    // =========================
+    sendJsonResponse(
+        200,
+        null,
+        "Préstamo devuelto correctamente"
+    );
+});

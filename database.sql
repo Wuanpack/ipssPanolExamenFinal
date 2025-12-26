@@ -20,7 +20,7 @@ CREATE TABLE herramientas (
 
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    rut VARCHAR(10) NOT NULL UNIQUE,
+    rut VARCHAR(9) NOT NULL UNIQUE,
     nombre VARCHAR(100) NOT NULL,
     apellido_paterno VARCHAR(100) NOT NULL,
     apellido_materno VARCHAR(100) NOT NULL,
@@ -123,16 +123,16 @@ INSERT INTO herramientas(n_parte, nombre, figura, indice, pagina, cantidad, cant
 ('21C2689G02', 'PULLER, Hydraulic, Turbine Rotor Bearing and Seal Runner', 86, '1', '2-358', 1, 1, TRUE);
 
 INSERT INTO usuarios (rut, nombre, apellido_paterno, apellido_materno, activo) VALUES
-('12345678-5', 'Juan', 'Perez', 'Gonzalez', TRUE),
-('11111111-1', 'Maria', 'Lopez', 'Fernandez', TRUE),
-('22222222-2', 'Carlos', 'Sanchez', 'Ramirez', TRUE),
-('87654321-4', 'Ana', 'Torres', 'Diaz', TRUE),
-('13572468-0', 'Luis', 'Martinez', 'Vargas', TRUE),
-('24681357-K', 'Pedro', 'Rojas', 'Muñoz', TRUE),
-('9876543-3',  'Camila', 'Silva', 'Contreras', TRUE),
-('76543210-6', 'Jorge', 'Pinto', 'Araya', TRUE),
-('19283746-9', 'Daniela', 'Fuentes', 'Navarro', TRUE),
-('15935728-7', 'Felipe', 'Morales', 'Castro', TRUE);
+('123456785', 'Juan', 'Perez', 'Gonzalez', TRUE),
+('111111111', 'Maria', 'Lopez', 'Fernandez', TRUE),
+('222222222', 'Carlos', 'Sanchez', 'Ramirez', TRUE),
+('876543214', 'Ana', 'Torres', 'Diaz', TRUE),
+('135724680', 'Luis', 'Martinez', 'Vargas', TRUE),
+('24681357K', 'Pedro', 'Rojas', 'Muñoz', TRUE),
+('98765433',  'Camila', 'Silva', 'Contreras', TRUE),
+('765432106', 'Jorge', 'Pinto', 'Araya', TRUE),
+('192837469', 'Daniela', 'Fuentes', 'Navarro', TRUE),
+('159357287', 'Felipe', 'Morales', 'Castro', TRUE);
 
 INSERT INTO lugares(nombre, activo) VALUES
 ('Linea F5', TRUE),

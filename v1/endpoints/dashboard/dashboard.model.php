@@ -20,12 +20,12 @@ class DashboardModel
                 SELECT
                     (SELECT COUNT(*) 
                      FROM herramientas 
-                     WHERE activo = 1) AS total_herramientas,
+                     WHERE activo = 1) AS total_herramientas_activas,
 
                     (SELECT COUNT(*) 
                      FROM movimiento m
                      JOIN tipo_movimiento tm ON tm.id = m.tipo_movimiento_id
-                     WHERE tm.nombre = 'Préstamo'
+                     WHERE tm.nombre = 'Prestado'
                        AND m.fecha_devolucion IS NULL
                        AND m.activo = 1) AS prestamos_activos,
 

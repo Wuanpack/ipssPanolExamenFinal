@@ -12,18 +12,20 @@ class HerramientasModel
     {
         [$con, $conn] = $this->getConnection();
 
-        $stmt = $conn->prepare(
-            "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
-            FROM herramientas
-            WHERE id = ?"
-        );
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $herr = $stmt->get_result()->fetch_assoc();
+        try {
+            $stmt = $conn->prepare(
+                "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
+                 FROM herramientas
+                 WHERE id = ?"
+            );
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
 
-        $con->closeConnection();
-
-        return $herr ?: null;
+            $herr = $stmt->get_result()->fetch_assoc();
+            return $herr ?: null;
+        } finally {
+            $con->closeConnection();
+        }
     }
 
     public function getInventario(int $page = 1, int $limit = 50): array
@@ -32,20 +34,21 @@ class HerramientasModel
 
         try {
             $page = max(1, $page);
-            $limit = max(1, min($limit, 100)); // límite máximo 100
+            $limit = max(1, min($limit, 100));
             $offset = ($page - 1) * $limit;
 
-            // Contar total de herramientas
-            $stmtTotal = $conn->prepare("SELECT COUNT(*) AS total FROM herramientas");
+            $stmtTotal = $conn->prepare(
+                "SELECT COUNT(*) AS total FROM herramientas WHERE activo = 1"
+            );
             $stmtTotal->execute();
-            $total = (int)$stmtTotal->get_result()->fetch_assoc()['total'];
+            $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
 
-            // Obtener herramientas con LIMIT y OFFSET
             $stmt = $conn->prepare(
                 "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
-                FROM herramientas
-                ORDER BY id ASC
-                LIMIT ? OFFSET ?"
+                 FROM herramientas
+                 WHERE activo = 1
+                 ORDER BY id ASC
+                 LIMIT ? OFFSET ?"
             );
             $stmt->bind_param("ii", $limit, $offset);
             $stmt->execute();
@@ -62,10 +65,9 @@ class HerramientasModel
                     'page' => $page,
                     'limit' => $limit,
                     'total' => $total,
-                    'total_pages' => (int)ceil($total / $limit)
+                    'total_pages' => (int) ceil($total / $limit)
                 ]
             ];
-
         } finally {
             $con->closeConnection();
         }
@@ -73,36 +75,56 @@ class HerramientasModel
 
     public function crearHerramienta(array $data): int
     {
+        if (empty($data)) {
+            throw new ValidationException("Body JSON inválido o vacío");
+        }
+
         [$con, $conn] = $this->getConnection();
 
         try {
             $conn->begin_transaction();
 
-            // Campos obligatorios
-            $camposObligatorios = ['n_parte', 'nombre', 'figura', 'indice', 'pagina', 'cantidad', 'cantidad_disponible'];
+            $camposObligatorios = [
+                'n_parte',
+                'nombre',
+                'figura',
+                'indice',
+                'pagina',
+                'cantidad',
+                'cantidad_disponible'
+            ];
+
             foreach ($camposObligatorios as $campo) {
-                if (!isset($data[$campo])) {
-                    throw new Exception("Falta el campo obligatorio: $campo");
+                if (!isset($data[$campo]) || $data[$campo] === '') {
+                    throw new ValidationException("Falta o es inválido el campo obligatorio: $campo");
                 }
             }
 
+            $data['n_parte'] = Validator::requireString($data['n_parte'], 'n_parte', 3, 50);
+            $data['nombre'] = Validator::requireString($data['nombre'], 'nombre');
+            $data['figura'] = Validator::requireCantidad($data['figura'], 'figura');
+            $data['indice'] = Validator::requireString($data['indice'], 'indice');
+            $data['pagina'] = Validator::requireString($data['pagina'], 'pagina');
+            $data['cantidad'] = Validator::requireCantidad($data['cantidad'], 'cantidad');
+            $data['cantidad_disponible'] = Validator::requireCantidad($data['cantidad_disponible'], 'cantidad_disponible');
+
             if ($data['cantidad_disponible'] > $data['cantidad']) {
-                throw new Exception("La cantidad disponible no puede ser mayor a la cantidad total");
+                throw new ValidationException("La cantidad disponible no puede ser mayor a la cantidad total");
             }
 
-            // Verificar que n_parte no exista
+            // Verificar duplicados
             $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND activo = 1");
             $stmt->bind_param("s", $data['n_parte']);
             $stmt->execute();
-            $row = $stmt->get_result()->fetch_assoc();
-            if ($row) {
-                throw new Exception("El número de parte ya existe en otra herramienta");
+
+            if ($stmt->get_result()->fetch_assoc()) {
+                throw new ConflictException("El número de parte ya existe en otra herramienta");
             }
 
             // Insertar
             $stmt = $conn->prepare(
                 "INSERT INTO herramientas (n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
             );
             $stmt->bind_param(
                 "ssssiii",
@@ -116,13 +138,12 @@ class HerramientasModel
             );
 
             if (!$stmt->execute()) {
-                throw new Exception("Error al crear herramienta");
+                throw new BadRequestException("Error al crear herramienta");
             }
 
-            $insertId = $stmt->insert_id;
+            $id = $stmt->insert_id;
             $conn->commit();
-
-            return $insertId;
+            return $id;
 
         } catch (Throwable $e) {
             $conn->rollback();
@@ -131,8 +152,8 @@ class HerramientasModel
             $con->closeConnection();
         }
     }
-    
-    public function updateHerramienta(int $id, array $data): void
+
+    public function updateHerramienta(int $id, array $data): array
     {
         [$con, $conn] = $this->getConnection();
 
@@ -141,66 +162,73 @@ class HerramientasModel
 
             $actual = $this->getHerramientaById($id);
             if (!$actual) {
-                throw new Exception("Herramienta no encontrada");
+                throw new NotFoundException("Herramienta no encontrada");
             }
 
-            $camposPermitidos = ['n_parte','nombre','figura','indice','pagina','cantidad','cantidad_disponible'];
+            $camposPermitidos = ['n_parte', 'nombre', 'figura', 'indice', 'pagina', 'cantidad', 'cantidad_disponible'];
             $set = [];
             $params = [];
-            $types = "";
-
-            // Validación de n_parte si se quiere cambiar
-            if (isset($data['n_parte']) && $data['n_parte'] !== $actual['n_parte']) {
-                $stmt = $conn->prepare(
-                    "SELECT id FROM herramientas WHERE n_parte = ? AND id != ? AND activo = 1"
-                );
-                $stmt->bind_param("si", $data['n_parte'], $id);
-                $stmt->execute();
-                $row = $stmt->get_result()->fetch_assoc();
-                if ($row) {
-                    throw new Exception("El número de parte ya existe en otra herramienta");
-                }
-            }
+            $types = '';
 
             foreach ($camposPermitidos as $campo) {
-                if (!array_key_exists($campo, $data)) continue;
+                if (!array_key_exists($campo, $data)) {
+                    continue;
+                }
 
-                if ($data[$campo] != $actual[$campo]) {
-                    $set[] = "$campo = ?";
-                    $params[] = $data[$campo];
-                    // Manejo de tipos para bind_param
-                    if (in_array($campo, ['cantidad','cantidad_disponible'], true)) {
-                        $params[count($params)-1] = (int)$data[$campo]; // aseguramos entero
-                        $types .= "i";
-                    } else {
-                        $types .= "s";
+                $valor = $data[$campo];
+
+                // Validaciones
+                if (in_array($campo, ['cantidad', 'cantidad_disponible', 'figura'], true)) {
+                    $valor = Validator::requireCantidad($valor, $campo);
+                    if ($campo === 'cantidad_disponible') {
+                        $cantidad = $data['cantidad'] ?? $actual['cantidad'];
+                        if ($valor > $cantidad) {
+                            throw new BadRequestException("La cantidad disponible no puede ser mayor a la cantidad total");
+                        }
+                    }
+                    if ($valor != $actual[$campo]) {
+                        $set[] = "$campo = ?";
+                        $params[] = $valor;
+                        $types .= 'i';
+                    }
+                } else {
+                    $valor = Validator::requireString($valor, $campo, 1, 255);
+                    if ($campo === 'n_parte' && $valor !== $actual['n_parte']) {
+                        // Validar unicidad
+                        $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND id != ? AND activo = 1");
+                        $stmt->bind_param("si", $valor, $id);
+                        $stmt->execute();
+                        if ($stmt->get_result()->fetch_assoc()) {
+                            throw new ConflictException("El número de parte ya existe en otra herramienta");
+                        }
+                    }
+                    if ($valor !== $actual[$campo]) {
+                        $set[] = "$campo = ?";
+                        $params[] = $valor;
+                        $types .= 's';
                     }
                 }
             }
 
             if (empty($set)) {
-                throw new Exception("No hay cambios para actualizar");
+                // No hay cambios, devolvemos info pero con status 200
+                return ['message' => 'No se realizaron cambios', 'no_changes' => true];
             }
 
-            // Validación de negocio para cantidades
-            $cantidad = $data['cantidad'] ?? $actual['cantidad'];
-            $cantidadDisponible = $data['cantidad_disponible'] ?? $actual['cantidad_disponible'];
-            if ($cantidadDisponible > $cantidad) {
-                throw new Exception("La cantidad disponible no puede ser mayor a la cantidad total");
-            }
-
-            $sql = "UPDATE herramientas SET " . implode(", ", $set) . " WHERE id = ?";
+            $sql = "UPDATE herramientas SET " . implode(', ', $set) . " WHERE id = ?";
             $params[] = $id;
-            $types .= "i";
+            $types .= 'i';
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param($types, ...$params);
 
             if (!$stmt->execute()) {
-                throw new Exception("Error al actualizar herramienta");
+                throw new BadRequestException("Error al actualizar herramienta");
             }
 
             $conn->commit();
+
+            return ['message' => 'Herramienta actualizada correctamente', 'no_changes' => false];
         } catch (Throwable $e) {
             $conn->rollback();
             throw $e;
@@ -209,10 +237,11 @@ class HerramientasModel
         }
     }
 
+
     public function setEstadoHerramienta(int $id, int $activo): void
     {
         if (!in_array($activo, [0, 1], true)) {
-            throw new Exception("Estado inválido");
+            throw new ValidationException("Estado inválido");
         }
 
         [$con, $conn] = $this->getConnection();
@@ -220,44 +249,44 @@ class HerramientasModel
         try {
             $conn->begin_transaction();
 
-            // Obtener herramienta con lock
-            $stmt = $conn->prepare("SELECT activo FROM herramientas WHERE id = ? FOR UPDATE");
+            $stmt = $conn->prepare(
+                "SELECT activo FROM herramientas WHERE id = ? FOR UPDATE"
+            );
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $herr = $stmt->get_result()->fetch_assoc();
 
-            if (!$herr) throw new Exception("Herramienta no existe");
-            if ((int)$herr['activo'] === $activo) {
-                throw new Exception("La herramienta ya se encuentra en ese estado");
+            if (!$herr) {
+                throw new NotFoundException("Herramienta no existe");
+            }
+            if ((int) $herr['activo'] === $activo) {
+                throw new BadRequestException("La herramienta ya se encuentra en ese estado");
             }
 
-            // Validación de negocio: no desactivar si hay préstamos activos
             if ($activo === 0) {
                 $stmt = $conn->prepare(
                     "SELECT COUNT(*) AS total
-                    FROM movimiento
-                    WHERE herramienta_id = ?
-                    AND tipo_movimiento_id = 2
-                    AND activo = 1"
+                     FROM movimiento
+                     WHERE herramienta_id = ?
+                       AND tipo_movimiento_id = 2
+                       AND activo = 1"
                 );
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 $row = $stmt->get_result()->fetch_assoc();
 
-                if ((int)$row['total'] > 0) {
-                    throw new Exception(
-                        "No se puede desactivar la herramienta con préstamos activos"
-                    );
+                if ((int) $row['total'] > 0) {
+                    throw new BadRequestException("No se puede desactivar la herramienta con préstamos activos");
                 }
             }
 
-            // Actualizar estado
-            $stmt = $conn->prepare("UPDATE herramientas SET activo = ? WHERE id = ?");
+            $stmt = $conn->prepare(
+                "UPDATE herramientas SET activo = ? WHERE id = ?"
+            );
             $stmt->bind_param("ii", $activo, $id);
             $stmt->execute();
 
             $conn->commit();
-
         } catch (Throwable $e) {
             $conn->rollback();
             throw $e;

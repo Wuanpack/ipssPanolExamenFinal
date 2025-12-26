@@ -1,182 +1,186 @@
 <?php
 
-/* =========================
-   QUERY PARAMS
-   ========================= */
-
-function getIdFromQuery(string $paramName = 'id'): ?string
+class Validator
 {
-    return $_GET[$paramName] ?? null;
-}
+    /* =========================
+       QUERY PARAMS
+       ========================= */
+    public static function getIdFromQuery(string $paramName = 'id'): int
+    {
+        if (!isset($_GET[$paramName])) {
+            throw new ValidationException("Parámetro '$paramName' no enviado");
+        }
 
-/* =========================
-   AUTH
-   ========================= */
+        if (!self::isPositiveInt($_GET[$paramName])) {
+            throw new ValidationException(
+                "El parámetro '$paramName' debe ser un entero mayor a 0"
+            );
+        }
 
-function validateAuth(): bool
-{
-    $headers = getallheaders();
-    $auth = $headers['Authorization'] ?? null;
-
-    if (!$auth) {
-        sendJsonResponse(401, null, "Token no enviado");
-        return false;
+        return (int) $_GET[$paramName];
     }
 
-    if ($auth !== 'Bearer ' . AUTH_TOKEN) {
-        sendJsonResponse(403, null, "Token inválido");
-        return false;
+    /* =========================
+       AUTH
+       ========================= */
+    public static function validateAuth(): void
+    {
+        $headers = function_exists('getallheaders') ? getallheaders() : $_SERVER;
+        $auth = $headers['Authorization'] ?? $headers['HTTP_AUTHORIZATION'] ?? null;
+
+        if (!$auth) {
+            throw new AuthException("Token no enviado");
+        }
+
+        if ($auth !== 'Bearer ' . AUTH_TOKEN) {
+            throw new AuthException("Token inválido");
+        }
     }
 
-    return true;
-}
+    /* =========================
+       HTTP METHOD
+       ========================= */
+    public static function validateMethod(array $allowed): void
+    {
+        $method = $_SERVER['REQUEST_METHOD'];
 
-/* =========================
-   METHODS
-   ========================= */
-function validateMethod(array $allowed): void
-{
-    $method = $_SERVER['REQUEST_METHOD'];
-
-    if (!in_array($method, $allowed, true)) {
-        sendJsonResponse(405, null, "Método no permitido");
-        exit;
-    }
-}
-
-/* =========================
-   JSON
-   ========================= */
-
-function validateJsonInput(): array
-{
-    $data = json_decode(file_get_contents("php://input"), true);
-
-    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
-        sendJsonResponse(400, null, "JSON inválido");
-        exit;
+        if (!in_array($method, $allowed, true)) {
+            throw new MethodException();
+        }
     }
 
-    return $data;
-}
+    /* =========================
+       JSON
+       ========================= */
+    public static function validateJsonInput(): array
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
 
-/* =========================
-   TIPOS BÁSICOS
-   ========================= */
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+            throw new BadRequestException("JSON inválido");
+        }
 
-function validatePositiveInt($value): bool
-{
-    return is_numeric($value) && (int)$value > 0;
-}
-
-function validateString(string $value, int $min = 1, int $max = 255): bool
-{
-    $len = mb_strlen(trim($value));
-    return $len >= $min && $len <= $max;
-}
-
-/* =========================
-   RUT
-   ========================= */
-
-/**
- * Valida un RUT chileno utilizando el algoritmo oficial de dígito verificador
- * (módulo 11).
- *
- * La validación NO se basa solo en el formato, sino en un cálculo matemático
- * que permite detectar errores de digitación y números inventados.
- */
-function validateRut(string $rut): bool
-{
-    /**
-     * 1. Normalización del RUT
-     * Se eliminan puntos, guiones y cualquier carácter no válido,
-     * dejando únicamente números y la letra K/k.
-     *
-     * Ejemplo:
-     *  "12.345.678-5" → "123456785"
-     */
-    $rut = preg_replace('/[^0-9kK]/', '', $rut);
-
-    /**
-     * 2. Validación mínima de longitud
-     * Un RUT debe tener al menos:
-     * - un número base
-     * - un dígito verificador
-     */
-    if (strlen($rut) < 2) {
-        return false;
+        return $data;
     }
 
-    /**
-     * 3. Separación de componentes
-     * - $numero: parte numérica del RUT
-     * - $dv: dígito verificador ingresado por el usuario
-     */
-    $dv = strtoupper(substr($rut, -1));
-    $numero = substr($rut, 0, -1);
-
-    /**
-     * 4. Validación de la parte numérica
-     * El cuerpo del RUT debe contener solo dígitos.
-     * Si contiene letras u otros caracteres, es inválido.
-     */
-    if (!ctype_digit($numero)) {
-        return false;
+    /* =========================
+       TIPOS BÁSICOS
+       ========================= */
+    public static function isPositiveInt($value): bool
+    {
+        return is_numeric($value)
+            && intval($value) == $value
+            && (int) $value > 0;
     }
 
-    /**
-     * 5. Cálculo del dígito verificador (módulo 11)
-     *
-     * Se recorren los dígitos del número de derecha a izquierda,
-     * multiplicándolos por factores cíclicos que van del 2 al 7.
-     *
-     * Este esquema garantiza que:
-     * - cambiar un dígito altere el resultado
-     * - se detecten errores de digitación y transposición
-     */
-    $suma = 0;
-    $multiplo = 2;
-
-    for ($i = strlen($numero) - 1; $i >= 0; $i--) {
-        $suma += $numero[$i] * $multiplo;
-        $multiplo = ($multiplo === 7) ? 2 : $multiplo + 1;
+    public static function isNonNegativeInt($value): bool
+    {
+        return is_numeric($value)
+            && intval($value) == $value
+            && (int) $value >= 0;
     }
 
-    /**
-     * 6. Obtención del valor base del dígito verificador
-     * Se aplica la operación módulo 11, que produce un valor
-     * entre 0 y 11.
-     */
-    $resto = 11 - ($suma % 11);
+    public static function requirePositiveInt($value, string $field): int
+    {
+        if (!self::isPositiveInt($value)) {
+            throw new ValidationException(
+                "El campo '$field' debe ser un entero mayor a 0"
+            );
+        }
 
-    /**
-     * 7. Conversión del resultado al formato oficial del DV
-     *
-     * Reglas:
-     * - 11 → '0'
-     * - 10 → 'K'
-     * - cualquier otro valor → el número correspondiente
-     */
-    $dvCalculado = match ($resto) {
-        11 => '0',
-        10 => 'K',
-        default => (string)$resto
-    };
+        return (int) $value;
+    }
 
-    /**
-     * 8. Comparación final
-     * El RUT es válido solo si el dígito verificador calculado
-     * coincide exactamente con el ingresado.
-     */
-    return $dv === $dvCalculado;
-}
+    public static function requireCantidad($value, string $field = 'cantidad'): int
+    {
+        if (!self::isNonNegativeInt($value)) {
+            throw new ValidationException(
+                "El campo '$field' debe ser un entero mayor o igual a 0"
+            );
+        }
 
-/* =========================
-   DOMINIO PAÑOL
-   ========================= */
+        return (int) $value;
+    }
 
-function validateNumeroParte(string $nParte): bool
-{
-    return preg_match('/^[A-Z0-9\-]{3,50}$/i', $nParte) === 1;
+    public static function requireString(
+        $value,
+        string $field,
+        int $min = 1,
+        int $max = 255
+    ): string {
+        if (!is_string($value)) {
+            throw new ValidationException(
+                "El campo '$field' debe ser un string"
+            );
+        }
+
+        $value = trim($value);
+        $len = mb_strlen($value);
+
+        if ($len < $min || $len > $max) {
+            throw new ValidationException(
+                "El campo '$field' debe tener entre $min y $max caracteres"
+            );
+        }
+
+        return $value;
+    }
+
+    /* =========================
+       RUT
+       ========================= */
+    public static function requireRut(string $rut): string
+    {
+        if ($rut === '') {
+            throw new ValidationException("El campo 'rut' es obligatorio");
+        }
+
+        $rut = preg_replace('/[^0-9kK]/', '', $rut);
+
+        if (strlen($rut) < 2) {
+            throw new ValidationException("RUT inválido");
+        }
+
+        $dv = strtoupper(substr($rut, -1));
+        $numero = substr($rut, 0, -1);
+
+        if (!ctype_digit($numero)) {
+            throw new ValidationException("RUT inválido");
+        }
+
+        $suma = 0;
+        $multiplo = 2;
+
+        for ($i = strlen($numero) - 1; $i >= 0; $i--) {
+            $suma += $numero[$i] * $multiplo;
+            $multiplo = ($multiplo === 7) ? 2 : $multiplo + 1;
+        }
+
+        $resto = 11 - ($suma % 11);
+        $dvCalc = match ($resto) {
+            11 => '0',
+            10 => 'K',
+            default => (string) $resto
+        };
+
+        if ($dv !== $dvCalc) {
+            throw new ValidationException("RUT inválido");
+        }
+
+        return $numero . $dv; // normalizado para BD
+    }
+
+    /* =========================
+       DOMINIO PAÑOL
+       ========================= */
+    public static function requireNumeroParte(string $nParte): string
+    {
+        $nParte = trim($nParte);
+
+        if (!preg_match('/^[A-Z0-9\-]{3,50}$/i', $nParte)) {
+            throw new ValidationException("Número de parte inválido");
+        }
+
+        return strtoupper($nParte);
+    }
 }

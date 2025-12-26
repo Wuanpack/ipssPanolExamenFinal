@@ -1,4 +1,5 @@
 <?php
+
 class MovimientosModel
 {
     private function getConnection(): array
@@ -7,53 +8,23 @@ class MovimientosModel
         return [$con, $con->getConnection()];
     }
 
-    /* =====================================================
-       CREAR SOLICITUD (NO TOCA STOCK)
-       ===================================================== */
-    public function crearSolicitud(
-        string $rut,
-        int $lugarId,
-        string $nParte,
-        int $cantidad
-    ): int {
+    /* ===========================
+       CREAR SOLICITUD
+       =========================== */
+    public function crearSolicitud(string $rut, int $lugarId, string $nParte, int $cantidad): int
+    {
         [$con, $conn] = $this->getConnection();
 
         try {
             $conn->begin_transaction();
 
-            /* USUARIO */
-            $stmt = $conn->prepare(
-                "SELECT id FROM usuarios WHERE rut = ? AND activo = 1"
-            );
-            $stmt->bind_param("s", $rut);
-            $stmt->execute();
-            $usuario = $stmt->get_result()->fetch_assoc();
+            $usuario = $this->validarUsuarioActivo($conn, $rut);
+            $herramienta = $this->validarHerramientaActiva($conn, $nParte);
+            $lugar = $this->validarLugarActivo($conn, $lugarId);
 
-            if (!$usuario) {
-                throw new Exception("Usuario no existe o está inactivo");
-            }
+            $rs = $conn->query("SELECT IFNULL(MAX(n_movimiento), 0) + 1 AS next_n FROM movimiento");
+            $nMovimiento = (int) $rs->fetch_assoc()['next_n'];
 
-            /* HERRAMIENTA */
-            $stmt = $conn->prepare(
-                "SELECT id
-                 FROM herramientas
-                 WHERE n_parte = ? AND activo = 1"
-            );
-            $stmt->bind_param("s", $nParte);
-            $stmt->execute();
-            $herramienta = $stmt->get_result()->fetch_assoc();
-
-            if (!$herramienta) {
-                throw new Exception("Herramienta no existe o está inactiva");
-            }
-
-            /* CALCULAR N_MOVIMIENTO */
-            $rs = $conn->query(
-                "SELECT IFNULL(MAX(n_movimiento), 0) + 1 AS next_n FROM movimiento"
-            );
-            $nMovimiento = (int)$rs->fetch_assoc()['next_n'];
-
-            /* INSERT SOLICITUD */
             $stmt = $conn->prepare(
                 "INSERT INTO movimiento (
                     n_movimiento,
@@ -64,11 +35,7 @@ class MovimientosModel
                     fecha_solicitud,
                     cantidad,
                     activo
-                ) VALUES (
-                    ?,
-                    1,
-                    ?, ?, ?, NOW(), ?, 1
-                )"
+                ) VALUES (?, 1, ?, ?, ?, NOW(), ?, 1)"
             );
 
             $stmt->bind_param(
@@ -80,9 +47,11 @@ class MovimientosModel
                 $cantidad
             );
 
-            $stmt->execute();
-            $conn->commit();
+            if (!$stmt->execute()) {
+                throw new ConflictException("No se pudo crear la solicitud");
+            }
 
+            $conn->commit();
             return $nMovimiento;
 
         } catch (Throwable $e) {
@@ -93,46 +62,48 @@ class MovimientosModel
         }
     }
 
-    /* =====================================================
-       ACEPTAR SOLICITUD (DESCUENTA STOCK)
-       ===================================================== */
-    public function aceptarSolicitud(int $nMovimiento): void
+    /* ===========================
+       ACEPTAR SOLICITUD
+       =========================== */
+    public function aceptarSolicitud($nMovimiento): void
     {
+        if (!Validator::isPositiveInt($nMovimiento)) {
+            throw new ValidationException("Parámetro 'id' inválido o no enviado");
+        }
+
         [$con, $conn] = $this->getConnection();
 
         try {
             $conn->begin_transaction();
 
-            /* OBTENER SOLICITUD + STOCK DISPONIBLE */
             $stmt = $conn->prepare(
-                "SELECT 
+                "SELECT
                     m.cantidad,
                     m.tipo_movimiento_id,
                     h.id AS herramienta_id,
                     h.cantidad_disponible
-                FROM movimiento m
-                JOIN herramientas h ON h.id = m.herramienta_id
-                WHERE m.n_movimiento = ?
-                  AND m.activo = 1
-                FOR UPDATE"
+                 FROM movimiento m
+                 JOIN herramientas h ON h.id = m.herramienta_id
+                 WHERE m.n_movimiento = ?
+                   AND m.activo = 1
+                 FOR UPDATE"
             );
             $stmt->bind_param("i", $nMovimiento);
             $stmt->execute();
             $mov = $stmt->get_result()->fetch_assoc();
 
             if (!$mov) {
-                throw new Exception("Solicitud no existe");
+                throw new NotFoundException("Solicitud no encontrada");
             }
 
             if ((int)$mov['tipo_movimiento_id'] !== 1) {
-                throw new Exception("La solicitud no está en estado 'Solicitado'");
+                throw new ConflictException("La solicitud no está en estado 'Solicitado'");
             }
 
             if ($mov['cantidad'] > $mov['cantidad_disponible']) {
-                throw new Exception("Stock disponible insuficiente");
+                throw new ConflictException("Stock disponible insuficiente");
             }
 
-            /* DESCONTAR STOCK */
             $stmt = $conn->prepare(
                 "UPDATE herramientas
                  SET cantidad_disponible = cantidad_disponible - ?
@@ -141,7 +112,6 @@ class MovimientosModel
             $stmt->bind_param("ii", $mov['cantidad'], $mov['herramienta_id']);
             $stmt->execute();
 
-            /* ACTUALIZAR MOVIMIENTO */
             $stmt = $conn->prepare(
                 "UPDATE movimiento
                  SET tipo_movimiento_id = 2,
@@ -162,52 +132,47 @@ class MovimientosModel
         }
     }
 
-    /* =====================================================
+    /* ===========================
        RECHAZAR SOLICITUD
-       ===================================================== */
-    public function rechazarSolicitud(
-        int $nMovimiento,
-        ?string $motivo = null
-        ): void {
+       =========================== */
+    public function rechazarSolicitud($nMovimiento, ?string $motivo): void
+    {
+        if (!Validator::isPositiveInt($nMovimiento)) {
+            throw new ValidationException("Parámetro 'id' inválido o no enviado");
+        }
+
         [$con, $conn] = $this->getConnection();
 
         try {
             $conn->begin_transaction();
 
-            /* =========================
-            OBTENER SOLICITUD
-            ========================= */
             $stmt = $conn->prepare(
                 "SELECT tipo_movimiento_id
-                FROM movimiento
-                WHERE n_movimiento = ?
-                AND activo = 1
-                FOR UPDATE"
+                 FROM movimiento
+                 WHERE n_movimiento = ?
+                   AND activo = 1
+                 FOR UPDATE"
             );
             $stmt->bind_param("i", $nMovimiento);
             $stmt->execute();
             $mov = $stmt->get_result()->fetch_assoc();
 
             if (!$mov) {
-                throw new Exception("La solicitud no existe o ya fue cerrada");
+                throw new NotFoundException("Solicitud no encontrada");
             }
 
             if ((int)$mov['tipo_movimiento_id'] !== 1) {
-                throw new Exception(
-                    "Solo se pueden rechazar solicitudes en estado 'Solicitado'"
-                );
+                throw new ConflictException("Solo se pueden rechazar solicitudes en estado 'Solicitado'");
             }
 
-            /* =========================
-            RECHAZAR Y CERRAR SOLICITUD
-            ========================= */
+            $motivo = $motivo ?? '';
             $stmt = $conn->prepare(
                 "UPDATE movimiento
-                SET tipo_movimiento_id = 3,
-                    motivo_rechazo = ?,
-                    fecha_resolucion = NOW(),
-                    activo = 0
-                WHERE n_movimiento = ?"
+                 SET tipo_movimiento_id = 3,
+                     motivo_rechazo = ?,
+                     fecha_resolucion = NOW(),
+                     activo = 0
+                 WHERE n_movimiento = ?"
             );
             $stmt->bind_param("si", $motivo, $nMovimiento);
             $stmt->execute();
@@ -222,60 +187,58 @@ class MovimientosModel
         }
     }
 
-    public function devolverPrestamo(int $nMovimiento): void
+    /* ===========================
+       DEVOLVER PRÉSTAMO
+       =========================== */
+    public function devolverPrestamo($nMovimiento): void
     {
+        if (!Validator::isPositiveInt($nMovimiento)) {
+            throw new ValidationException("Parámetro 'id' inválido o no enviado");
+        }
+
         [$con, $conn] = $this->getConnection();
 
         try {
             $conn->begin_transaction();
 
-            /* =========================
-            OBTENER PRÉSTAMO
-            ========================= */
             $stmt = $conn->prepare(
                 "SELECT
                     m.cantidad,
                     m.tipo_movimiento_id,
                     h.id AS herramienta_id
-                FROM movimiento m
-                JOIN herramientas h ON h.id = m.herramienta_id
-                WHERE m.n_movimiento = ?
-                AND m.activo = 1
-                FOR UPDATE"
+                 FROM movimiento m
+                 JOIN herramientas h ON h.id = m.herramienta_id
+                 WHERE m.n_movimiento = ?
+                   AND m.activo = 1
+                 FOR UPDATE"
             );
             $stmt->bind_param("i", $nMovimiento);
             $stmt->execute();
             $mov = $stmt->get_result()->fetch_assoc();
 
             if (!$mov) {
-                throw new Exception("El movimiento no existe o ya fue cerrado");
+                throw new NotFoundException("Préstamo no encontrado");
             }
 
             if ((int)$mov['tipo_movimiento_id'] !== 2) {
-                throw new Exception("Solo se pueden devolver préstamos activos");
+                throw new ConflictException("Solo se pueden devolver préstamos activos");
             }
 
-            /* =========================
-            RESTITUIR STOCK DISPONIBLE
-            ========================= */
             $stmt = $conn->prepare(
                 "UPDATE herramientas
-                SET cantidad_disponible = cantidad_disponible + ?
-                WHERE id = ?"
+                 SET cantidad_disponible = cantidad_disponible + ?
+                 WHERE id = ?"
             );
             $stmt->bind_param("ii", $mov['cantidad'], $mov['herramienta_id']);
             $stmt->execute();
 
-            /* =========================
-            CERRAR MOVIMIENTO
-            ========================= */
             $stmt = $conn->prepare(
                 "UPDATE movimiento
-                SET tipo_movimiento_id = 4,
-                    fecha_devolucion = NOW(),
-                    fecha_resolucion = NOW(),
-                    activo = 0
-                WHERE n_movimiento = ?"
+                 SET tipo_movimiento_id = 4,
+                     fecha_devolucion = NOW(),
+                     fecha_resolucion = NOW(),
+                     activo = 0
+                 WHERE n_movimiento = ?"
             );
             $stmt->bind_param("i", $nMovimiento);
             $stmt->execute();
@@ -288,5 +251,44 @@ class MovimientosModel
         } finally {
             $con->closeConnection();
         }
+    }
+
+    /* ===========================
+       MÉTODOS PRIVADOS DE VALIDACIÓN
+       =========================== */
+    private function validarUsuarioActivo($conn, string $rut): array
+    {
+        $stmt = $conn->prepare("SELECT id FROM usuarios WHERE rut = ? AND activo = 1");
+        $stmt->bind_param("s", $rut);
+        $stmt->execute();
+        $usuario = $stmt->get_result()->fetch_assoc();
+        if (!$usuario) {
+            throw new NotFoundException("Usuario no existe o está inactivo");
+        }
+        return $usuario;
+    }
+
+    private function validarHerramientaActiva($conn, string $nParte): array
+    {
+        $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND activo = 1");
+        $stmt->bind_param("s", $nParte);
+        $stmt->execute();
+        $herramienta = $stmt->get_result()->fetch_assoc();
+        if (!$herramienta) {
+            throw new NotFoundException("Herramienta no existe o está inactiva");
+        }
+        return $herramienta;
+    }
+
+    private function validarLugarActivo($conn, int $lugarId): array
+    {
+        $stmt = $conn->prepare("SELECT id FROM lugares WHERE id = ? AND activo = 1");
+        $stmt->bind_param("i", $lugarId);
+        $stmt->execute();
+        $lugar = $stmt->get_result()->fetch_assoc();
+        if (!$lugar) {
+            throw new NotFoundException("Lugar no existe o está inactivo");
+        }
+        return $lugar;
     }
 }
