@@ -18,8 +18,6 @@ API para la gestión de un pañol de herramientas para motores **J85-GE-21 B/C**
 - [Instalación](#instalación)
 - [Autenticación](#autenticación)
 - [Endpoints principales](#endpoints-principales)
-- [Ejemplos de uso](#ejemplos-de-uso)
-- [Notas](#notas)
 - [Contacto](#contacto)
 
 ---
@@ -34,47 +32,45 @@ API para la gestión de un pañol de herramientas para motores **J85-GE-21 B/C**
 
 ## Estructura del proyecto
 
+Estructura del proyecto: API Pañol de Herramientas J85-GE-21 B/C
+
 ```
+
 /API_PANOL
-|
-|-- /common
-|    |-- database.php        # Conexión a base de datos
-|    |-- validators.php      # Funciones de validación
-|    `-- response.php        # Funciones para enviar JSON
-|
-|-- /v1
-|    |
-|    |-- /swagger
-|    |     |-- swagger.json                # Archivo JSON para visualización de Swagger
-|    |     |-- swagger-initializer.json   # Configuración inicial de Swagger
-|    |     `-- otros archivos Swagger
-|    |
-|    `-- /endpoints
-|          |
-|          |-- /dashboard
-|          |     |-- dashboard.model.php  # Queries a la base de datos
-|          |     `-- dashboard.php        # GET cards e historial de movimientos
-|          |
-|          |-- /herramientas
-|          |     |-- herramientas.model.php  # Queries a la base de datos
-|          |     |-- herramientas.php        # GET inventario 
-|          |     |-- anadirHerramienta.php   # POST crear herramientas
-|          |     |-- modificar.php           # PUT modificar herramientas
-|          |     |-- activar.php             # PATCH activar herramientas
-|          |     `-- desactivar.php          # DELETE desactivar herramientas (lógico)
-|          |
-|          `-- /movimientos
-|                |-- movimientos.model.php   # Queries a la base de datos
-|                |-- movimientos.php         # POST solicitar préstamo
-|                |-- aceptar.php             # POST aceptar solicitud
-|                |-- rechazar.php            # POST rechazar solicitud
-|                `-- devolver.php            # POST devolver herramienta
-|
-`-- config.php
+│
+├─ /common
+│   ├─ database.php                      # Conexión a base de datos
+│   ├─ validators.php                    # Funciones de validación
+│   └─ response.php                      # Funciones para enviar JSON
+│
+├─ /v1
+│   ├─/swagger
+│   │   └─ swagger.json                  # Archivo JSON para visualizacion de Swagger
+│   │   └─ swagger-initializer.json      # Configuración inicial de Swagger
+│   │   └─ otros archivos Swagger
+│   │
+│   └─ /endpoints
+│       ├─ /dashboard
+│       │   ├─ dashboard.model.php       # Queries a la base de datos
+│       │   └─ dashboard.php             # GET cards e historial de movimientos
+|       |
+│       ├─ /herramientas
+│       │   ├─ herramientas.model.php    # Queries a la base de datos
+│       │   ├─ herramientas.php          # GET inventario 
+│       │   ├─ anadirHerramienta.php     # POST crear herramientas
+│       │   ├─ modificar.php             # PUT modificar herramientas
+│       │   ├─ activar.php               # PATCH activar herramientas
+│       │   └─ desactivar.php            # DELETE desactivar herramientas (lógico)
+│       │
+│       └─ /movimientos
+│           ├─ movimientos.model.php     # Queries a la base de datos
+│           ├─ movimientos.php           # POST solicitar préstamo
+│           ├─ aceptar.php               # POST aceptar solicitud
+│           ├─ rechazar.php              # POST rechazar solicitud
+│           └─ devolver.php              # POST devolver herramienta
+└─ config.php
+
 ```
-
-
-
 
 ## Instalación
 1. Clonar el repositorio:
