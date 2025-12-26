@@ -38,7 +38,7 @@ class HerramientasModel
             $offset = ($page - 1) * $limit;
 
             $stmtTotal = $conn->prepare(
-                "SELECT COUNT(*) AS total FROM herramientas WHERE activo = 1"
+                "SELECT COUNT(*) AS total FROM herramientas"
             );
             $stmtTotal->execute();
             $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
@@ -46,7 +46,6 @@ class HerramientasModel
             $stmt = $conn->prepare(
                 "SELECT id, n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo
                  FROM herramientas
-                 WHERE activo = 1
                  ORDER BY id ASC
                  LIMIT ? OFFSET ?"
             );
@@ -84,6 +83,7 @@ class HerramientasModel
         try {
             $conn->begin_transaction();
 
+            // Campos obligatorios
             $camposObligatorios = [
                 'n_parte',
                 'nombre',
@@ -100,6 +100,7 @@ class HerramientasModel
                 }
             }
 
+            // Validaciones
             $data['n_parte'] = Validator::requireString($data['n_parte'], 'n_parte', 3, 50);
             $data['nombre'] = Validator::requireString($data['nombre'], 'nombre');
             $data['figura'] = Validator::requireCantidad($data['figura'], 'figura');
@@ -112,21 +113,32 @@ class HerramientasModel
                 throw new ValidationException("La cantidad disponible no puede ser mayor a la cantidad total");
             }
 
-            // Verificar duplicados
+            // Verificar si ya existe la herramienta activa
             $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND activo = 1");
             $stmt->bind_param("s", $data['n_parte']);
             $stmt->execute();
+            $existingActive = $stmt->get_result()->fetch_assoc();
 
-            if ($stmt->get_result()->fetch_assoc()) {
+            if ($existingActive) {
                 throw new ConflictException("El número de parte ya existe en otra herramienta");
             }
 
-            // Insertar
-            $stmt = $conn->prepare(
+            // Verificar si existe la herramienta desactivada
+            $stmt = $conn->prepare("SELECT id FROM herramientas WHERE n_parte = ? AND activo = 0");
+            $stmt->bind_param("s", $data['n_parte']);
+            $stmt->execute();
+            $existingInactive = $stmt->get_result()->fetch_assoc();
+
+            if ($existingInactive) {
+                throw new ConflictException("El número de parte ya existe en otra herramienta desactivada.");
+            }
+
+            // Insertar nueva herramienta
+            $stmtInsert = $conn->prepare(
                 "INSERT INTO herramientas (n_parte, nombre, figura, indice, pagina, cantidad, cantidad_disponible, activo)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)"
             );
-            $stmt->bind_param(
+            $stmtInsert->bind_param(
                 "ssssiii",
                 $data['n_parte'],
                 $data['nombre'],
@@ -137,11 +149,11 @@ class HerramientasModel
                 $data['cantidad_disponible']
             );
 
-            if (!$stmt->execute()) {
+            if (!$stmtInsert->execute()) {
                 throw new BadRequestException("Error al crear herramienta");
             }
 
-            $id = $stmt->insert_id;
+            $id = $stmtInsert->insert_id;
             $conn->commit();
             return $id;
 
@@ -152,6 +164,8 @@ class HerramientasModel
             $con->closeConnection();
         }
     }
+
+
 
     public function updateHerramienta(int $id, array $data): array
     {

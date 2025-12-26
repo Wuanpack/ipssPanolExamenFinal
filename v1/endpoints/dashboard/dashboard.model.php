@@ -52,25 +52,28 @@ class DashboardModel
         [$con, $conn] = $this->getConnection();
 
         $sql = "
-            SELECT
-                m.n_movimiento,
-                h.n_parte,
-                h.nombre              AS herramienta,
-                u.rut                 AS usuario,
-                l.nombre              AS lugar,
-                tm.nombre             AS tipo_movimiento,
-                m.fecha_prestamo,
-                m.fecha_devolucion,
-                m.cantidad
-            FROM movimiento m
-            JOIN herramientas h      ON h.id = m.herramienta_id
-            JOIN usuarios u          ON u.id = m.usuario_id
-            JOIN lugares l           ON l.id = m.lugar_id
-            JOIN tipo_movimiento tm  ON tm.id = m.tipo_movimiento_id
-            WHERE m.activo = 1
-            ORDER BY m.fecha_prestamo DESC
-            LIMIT 50
-        ";
+        SELECT
+            m.n_movimiento,
+            h.n_parte,
+            h.nombre              AS herramienta,
+            u.rut                 AS usuario,
+            l.nombre              AS lugar,
+            tm.nombre             AS tipo_movimiento,
+            m.fecha_prestamo,
+            m.fecha_devolucion,
+            m.cantidad
+        FROM movimiento m
+        JOIN herramientas h      ON h.id = m.herramienta_id
+        JOIN usuarios u          ON u.id = m.usuario_id
+        JOIN lugares l           ON l.id = m.lugar_id
+        JOIN tipo_movimiento tm  ON tm.id = m.tipo_movimiento_id
+        WHERE m.activo = 1 
+           OR tm.nombre IN ('Devolución','Rechazado')
+        ORDER BY 
+            COALESCE(m.fecha_prestamo, m.fecha_solicitud, NOW()) DESC,
+            m.n_movimiento DESC
+        LIMIT 15
+    ";
 
         try {
             $rs = mysqli_query($conn, $sql);
@@ -80,6 +83,7 @@ class DashboardModel
             $con->closeConnection();
         }
     }
+
 
     public function getDashboardData(): array
     {

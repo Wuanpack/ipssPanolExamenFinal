@@ -82,7 +82,7 @@ Estructura del proyecto: API Pañol de Herramientas J85-GE-21 B/C
    git clone https://github.com/Wuanpack/ipssPanolAPI
 2. Configurar base de datos en database.php
 3. Importar el esquema SQL del pañol
-4. Configurar tu servidor web apuntando al directorio /API_PANOL/v1/endpoints
+4. Configurar tu servidor web apuntando al directorio /PROYECTO_PANOL/API_PANOL/v1/endpoints
 
 ## Autenticación
 
@@ -93,7 +93,7 @@ Authorization: Bearer ipss.2025.T3
 ## Endpoints principales
 
 *   Todos los endpoints y detalles completos se encuentran en swagger.json
-*   Para ver la UI de Swagger, apuntar a: /API_PANOL/v1/swagger/#/
+*   Para ver la UI de Swagger, apuntar a: /PROYECTO_PANOL/API_PANOL/v1/swagger/#/
 
 ## Contacto
 

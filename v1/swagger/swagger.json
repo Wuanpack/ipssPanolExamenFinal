@@ -14,7 +14,7 @@
         }
     },
     "host": "localhost",
-    "basePath": "/API_PANOL/v1/endpoints",
+    "basePath": "/PROYECTO_PANOL/API_PANOL/v1/endpoints",
     "tags": [
         {
             "name": "dashboard",
