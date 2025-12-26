@@ -79,7 +79,7 @@ Estructura del proyecto: API Pañol de Herramientas J85-GE-21 B/C
 ## Instalación
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/Wuanpack/ipssPanolAPI
+   git clone https://github.com/Wuanpack/ipssPanolExamenFinal
 2. Configurar base de datos en database.php
 3. Importar el esquema SQL del pañol
 4. Configurar tu servidor web apuntando al directorio /PROYECTO_PANOL/API_PANOL/v1/endpoints
